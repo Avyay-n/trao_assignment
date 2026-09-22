@@ -1,3 +1,4 @@
+import dns from "node:dns";
 import mongoose from "mongoose";
 import { setUsingMemoryStore } from "./models/store.js";
 
@@ -6,8 +7,15 @@ export async function connectDB(): Promise<void> {
 
   if (uri) {
     try {
-      console.log(`[Database] Attempting connection to MongoDB at: ${uri}`);
-      await mongoose.connect(uri, { serverSelectionTimeoutMS: 3000 });
+      if (uri.startsWith("mongodb+srv://")) {
+        try {
+          dns.setServers(["8.8.8.8", "8.8.4.4", "1.1.1.1"]);
+        } catch {
+          // ignore if environment restricts custom dns
+        }
+      }
+      console.log(`[Database] Attempting connection to MongoDB Atlas...`);
+      await mongoose.connect(uri, { serverSelectionTimeoutMS: 5000 });
       console.log("[Database] Connected to external MongoDB successfully.");
       setUsingMemoryStore(false);
       return;

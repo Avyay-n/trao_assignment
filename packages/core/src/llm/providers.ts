@@ -7,8 +7,8 @@ export type { LLMProvider, LLMClientOptions, LLMMessage };
  */
 async function callWithRetry<T>(
   fn: () => Promise<T>,
-  retries: number = 3,
-  initialDelayMs: number = 1500
+  retries: number = 5,
+  initialDelayMs: number = 2000
 ): Promise<T> {
   let attempt = 0;
   let delay = initialDelayMs;
@@ -18,15 +18,28 @@ async function callWithRetry<T>(
       return await fn();
     } catch (err: any) {
       attempt++;
-      const isRateLimit = err.status === 429 || (err.message && err.message.includes("429")) || (err.message && err.message.includes("quota"));
+      const isRateLimit =
+        err.status === 429 ||
+        (err.message && err.message.includes("429")) ||
+        (err.message && err.message.includes("quota")) ||
+        (err.message && err.message.includes("rate_limit"));
       const isServerErr = err.status >= 500;
 
       if ((isRateLimit || isServerErr) && attempt <= retries) {
-        const jitter = Math.random() * 500;
-        const waitTime = delay + jitter;
-        console.warn(`[LLM Rate-Limit / Retry] Attempt ${attempt}/${retries}. Waiting ${Math.round(waitTime)}ms before backoff retry...`);
+        let waitTime = delay + Math.random() * 1000;
+
+        // Check if provider explicitly suggested wait duration: "Please try again in 13.8s"
+        const match = err.message?.match(/try again in ([\d\.]+)s/i);
+        if (match && match[1]) {
+          const waitSeconds = parseFloat(match[1]);
+          waitTime = Math.max(waitTime, Math.ceil(waitSeconds * 1000) + 1000);
+        }
+
+        console.warn(
+          `[LLM Rate-Limit / Retry] Attempt ${attempt}/${retries}. Waiting ${(waitTime / 1000).toFixed(1)}s before retry...`
+        );
         await new Promise((res) => setTimeout(res, waitTime));
-        delay *= 2;
+        delay = Math.min(delay * 2, 20000);
         continue;
       }
       throw err;
@@ -107,7 +120,7 @@ export class GroqProvider implements LLMProvider {
   private apiKey: string;
   private model: string;
 
-  constructor(apiKey: string, model: string = "llama-3.3-70b-versatile") {
+  constructor(apiKey: string, model: string = process.env.GROQ_MODEL || "openai/gpt-oss-20b") {
     this.apiKey = apiKey;
     this.model = model;
   }

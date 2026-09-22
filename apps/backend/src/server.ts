@@ -1,9 +1,15 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import path from "node:path";
 
-// Load environment variables
+
+// Load environment variables from current directory, workspace root, and parent directories
 dotenv.config();
+dotenv.config({ path: path.resolve(process.cwd(), ".env") });
+dotenv.config({ path: path.resolve(process.cwd(), "../../.env") });
+
+
 
 import { connectDB } from "./db.js";
 import { register, login, me, demoLogin } from "./controllers/auth.js";

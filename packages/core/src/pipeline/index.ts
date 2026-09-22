@@ -209,27 +209,33 @@ INSTRUCTIONS:
 5. "difficulty" must be an integer from 1 (fundamental/accessible) to 3 (complex/system-level architectural challenge).
 6. "answer_outline" must give concrete guidance on what a strong candidate covers.
 
-Return strictly valid JSON:
-[
-  {
-    "id": "q1",
-    "requirement_ids": ["r1"],
-    "category": "technical" | "behavioural" | "system-design" | "company-fit",
-    "prompt": string,
-    "answer_outline": string,
-    "difficulty": 1 | 2 | 3
-  }
-]`;
+Return strictly valid JSON with a "questions" array:
+{
+  "questions": [
+    {
+      "id": "q1",
+      "requirement_ids": ["r1"],
+      "category": "technical" | "behavioural" | "system-design" | "company-fit",
+      "prompt": string,
+      "answer_outline": string,
+      "difficulty": 1 | 2 | 3
+    }
+  ]
+}`;
 
   const questionRes = await llm.complete(
     [
-      { role: "system", content: "You generate interview questions mapped to requirements. Output strictly valid JSON array." },
+      { role: "system", content: "You generate interview questions mapped to requirements. Output strictly valid JSON." },
       { role: "user", content: questionPrompt },
     ],
     { responseFormatJson: true, temperature: 0.3 }
   );
 
-  let initialQuestions: Question[] = safeParseJson<Question[]>(questionRes, []);
+  const parsedQuestionObj = safeParseJson<any>(questionRes, {});
+  let initialQuestions: Question[] = Array.isArray(parsedQuestionObj)
+    ? parsedQuestionObj
+    : (parsedQuestionObj?.questions || Object.values(parsedQuestionObj).find((v) => Array.isArray(v)) || []);
+
   if (!Array.isArray(initialQuestions)) {
     initialQuestions = [];
   }
@@ -278,27 +284,33 @@ INSTRUCTIONS:
 3. Category must be "technical", "system-design", "behavioural", or "company-fit".
 4. Difficulty must be 1, 2, or 3.
 
-Return strictly a JSON array of questions:
-[
-  {
-    "id": "q_gap_1",
-    "requirement_ids": ["rX"],
-    "category": "technical",
-    "prompt": string,
-    "answer_outline": string,
-    "difficulty": 2
-  }
-]`;
+Return strictly valid JSON with a "questions" array:
+{
+  "questions": [
+    {
+      "id": "q_gap_1",
+      "requirement_ids": ["rX"],
+      "category": "technical",
+      "prompt": string,
+      "answer_outline": string,
+      "difficulty": 2
+    }
+  ]
+}`;
 
     const gapRes = await llm.complete(
       [
-        { role: "system", content: "You generate gap-closing questions. Output strictly a JSON array." },
+        { role: "system", content: "You generate gap-closing questions. Output strictly valid JSON." },
         { role: "user", content: gapPrompt },
       ],
       { responseFormatJson: true, temperature: 0.2 }
     );
 
-    let gapQuestions: Question[] = safeParseJson<Question[]>(gapRes, []);
+    const parsedGapObj = safeParseJson<any>(gapRes, {});
+    let gapQuestions: Question[] = Array.isArray(parsedGapObj)
+      ? parsedGapObj
+      : (parsedGapObj?.questions || Object.values(parsedGapObj).find((v) => Array.isArray(v)) || []);
+
     if (!Array.isArray(gapQuestions)) {
       gapQuestions = [];
     }
@@ -341,15 +353,17 @@ INSTRUCTIONS:
 3. "back": A clear, authoritative explanation or model response outline.
 4. "requirement_ids": Link to the corresponding requirement ID(s).
 
-Return strictly valid JSON:
-[
-  {
-    "id": "f1",
-    "front": string,
-    "back": string,
-    "requirement_ids": ["r1"]
-  }
-]`;
+Return strictly valid JSON with a "flashcards" array:
+{
+  "flashcards": [
+    {
+      "id": "f1",
+      "front": string,
+      "back": string,
+      "requirement_ids": ["r1"]
+    }
+  ]
+}`;
 
   const flashcardRes = await llm.complete(
     [
@@ -359,7 +373,11 @@ Return strictly valid JSON:
     { responseFormatJson: true, temperature: 0.2 }
   );
 
-  let flashcards: Flashcard[] = safeParseJson<Flashcard[]>(flashcardRes, []);
+  const parsedFlashObj = safeParseJson<any>(flashcardRes, {});
+  let flashcards: Flashcard[] = Array.isArray(parsedFlashObj)
+    ? parsedFlashObj
+    : (parsedFlashObj?.flashcards || Object.values(parsedFlashObj).find((v) => Array.isArray(v)) || []);
+
   if (!Array.isArray(flashcards) || flashcards.length === 0) {
     flashcards = validatedRequirements.map((r, i) => ({
       id: `f${i + 1}`,
