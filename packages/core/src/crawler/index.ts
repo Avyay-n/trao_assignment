@@ -1,3 +1,4 @@
+import process from "node:process";
 import * as cheerio from "cheerio";
 import { RobotsParser } from "./robots.js";
 
