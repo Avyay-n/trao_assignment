@@ -1,0 +1,24 @@
+{
+  "name": "trao-ai-interview-prep-kit",
+  "version": "1.0.0",
+  "description": "AI Interview Prep Kit - Full Stack Application & Evaluation Pipeline",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "npm run dev --workspace=@prepkit/backend",
+    "dev:frontend": "npm run dev --workspace=@prepkit/frontend",
+    "build": "npm run build --workspace=@prepkit/core && npm run build --workspace=@prepkit/backend && npm run build --workspace=@prepkit/frontend",
+    "build:core": "npm run build --workspace=@prepkit/core",
+    "test": "npm run test --workspace=@prepkit/core",
+    "evaluate": "tsx scripts/evaluate.ts"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}
