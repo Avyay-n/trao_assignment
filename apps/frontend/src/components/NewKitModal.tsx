@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, Sparkles, Upload, Clock, Globe, FileText, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
-import { fetchApi } from "@/lib/api";
+import { X, Sparkles, Upload, Clock, Globe, FileText, CheckCircle2, AlertCircle, Loader2, FolderUp } from "lucide-react";
+import { fetchApi, API_BASE } from "@/lib/api";
 
 interface NewKitModalProps {
   isOpen: boolean;
@@ -22,6 +22,19 @@ export const NewKitModal: React.FC<NewKitModalProps> = ({ isOpen, onClose, onKit
   const [progressMsg, setProgressMsg] = useState("");
   const [progressPct, setProgressPct] = useState(0);
   const [error, setError] = useState<string | null>(null);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      if (content) {
+        setBatchJson(content);
+      }
+    };
+    reader.readAsText(file);
+  };
 
   if (!isOpen) return null;
 
@@ -61,7 +74,7 @@ export const NewKitModal: React.FC<NewKitModalProps> = ({ isOpen, onClose, onKit
       const kitId = data.kit._id;
 
       // Listen for SSE progress
-      const eventSource = new EventSource(`http://localhost:4000/api/kits/${kitId}/stream`);
+      const eventSource = new EventSource(`${API_BASE}/kits/${kitId}/stream`);
 
       eventSource.onmessage = (event) => {
         try {
@@ -286,9 +299,21 @@ export const NewKitModal: React.FC<NewKitModalProps> = ({ isOpen, onClose, onKit
           </form>
         ) : (
           <form onSubmit={handleSubmitBatch} className="mt-5 space-y-4">
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Upload or paste a JSON array of case pairs to prepare for multiple roles simultaneously:
-            </p>
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Upload a JSON file or paste cases below to prepare for multiple roles simultaneously:
+              </p>
+              <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-indigo-300 text-xs font-medium border border-slate-700/80 transition-colors shadow-sm">
+                <FolderUp className="w-3.5 h-3.5" />
+                <span>Upload .json File</span>
+                <input
+                  type="file"
+                  accept=".json,application/json"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+              </label>
+            </div>
             <textarea
               required
               rows={8}

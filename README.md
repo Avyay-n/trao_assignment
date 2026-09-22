@@ -72,6 +72,58 @@ The solution is implemented as a high-performance TypeScript monorepo structured
    - Frontend UI: `http://localhost:3000`
    - Backend API: `http://localhost:4000`
 
+### Deployed Setup (Production Hosting)
+
+Both the frontend and backend can be hosted on free-tier platforms (Vercel, Render, Railway, or Fly.io).
+
+#### Option A: Vercel (Frontend) + Render (Backend) [Recommended]
+1. **Deploy Backend on Render**:
+   - Create a new **Web Service** connected to your repository.
+   - **Root Directory**: `.`
+   - **Build Command**: `npm install && npm run build:core && npm run build --workspace=@prepkit/backend`
+   - **Start Command**: `npm run start:backend`
+   - Set Environment Variables:
+     - `NODE_ENV=production`
+     - `JWT_SECRET=<secure-random-string>`
+     - `MONGODB_URI=<your-mongodb-atlas-uri>` (or leave unset for automatic in-memory store)
+     - `LLM_PROVIDER=groq`
+     - `GROQ_API_KEY=<your-groq-key>`
+     - `GROQ_MODEL=openai/gpt-oss-120b`
+     - `ALLOW_LOCAL_URLS=false`
+   - Copy the deployed backend URL (e.g. `https://prepkit-backend.onrender.com`).
+
+2. **Deploy Frontend on Vercel**:
+   - Import your GitHub repository in Vercel.
+   - **Framework Preset**: Next.js
+   - **Root Directory**: `.`
+   - **Build Command**: `npm run build:core && npm run build --workspace=@prepkit/frontend`
+   - **Output Directory**: `apps/frontend/.next`
+   - Set Environment Variable:
+     - `NEXT_PUBLIC_API_URL=https://<your-backend-service>.onrender.com/api`
+
+#### Option B: 1-Click Render Blueprint (`render.yaml`)
+A ready-to-deploy Infrastructure-as-Code [render.yaml](file:///c:/Users/avyay/trao_assignment/render.yaml) is included in the root directory:
+1. In Render Dashboard, click **New +** -> **Blueprint**.
+2. Select your repository. Render automatically provisions both `prepkit-backend` and `prepkit-frontend` services.
+3. Fill in `GROQ_API_KEY` and `MONGODB_URI` when prompted.
+
+#### Environment Variables Reference
+
+| Variable | Scope | Purpose |
+|---|---|---|
+| `PORT` | Backend | HTTP port Express listens on (default: `4000`, Render injects `10000`). |
+| `NODE_ENV` | Both | `development` or `production`. Enables strict SSRF blocks when `production`. |
+| `JWT_SECRET` | Backend | Secret key used to sign and verify user session tokens. |
+| `MONGODB_URI` | Backend | MongoDB connection string (Atlas or local). Falls back to in-memory store if unset. |
+| `LLM_PROVIDER` | Backend / CLI | Active LLM adapter: `groq`, `gemini`, or `mock`. |
+| `GROQ_API_KEY` | Backend / CLI | Free-tier API key from Groq Console. |
+| `GROQ_MODEL` | Backend / CLI | LLM model name (e.g. `openai/gpt-oss-120b` or `llama-3.3-70b-versatile`). |
+| `GEMINI_API_KEY` | Backend / CLI | Alternative free-tier API key from Google AI Studio. |
+| `NEXT_PUBLIC_API_URL` | Frontend | Public API base URL used by browser client (e.g. `https://backend.onrender.com/api`). |
+| `ALLOW_LOCAL_URLS` | Crawler / CLI | Allows `localhost` and loopback IP addresses for evaluation test mocks. |
+| `CRAWLER_TIMEOUT_MS` | Crawler | Max page retrieval timeout before skipping (default `8000`). |
+| `MAX_CRAWL_PAGES` | Crawler | Maximum pages crawled per company (default `4`). |
+
 ---
 
 ## 3. Section 9 Batch Entry Point Execution

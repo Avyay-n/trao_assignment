@@ -120,7 +120,7 @@ export class GroqProvider implements LLMProvider {
   private apiKey: string;
   private model: string;
 
-  constructor(apiKey: string, model: string = process.env.GROQ_MODEL || "openai/gpt-oss-20b") {
+  constructor(apiKey: string, model: string = process.env.GROQ_MODEL || "openai/gpt-oss-120b") {
     this.apiKey = apiKey;
     this.model = model;
   }
@@ -128,38 +128,58 @@ export class GroqProvider implements LLMProvider {
   async complete(messages: LLMMessage[], options?: LLMClientOptions): Promise<string> {
     const url = "https://api.groq.com/openai/v1/chat/completions";
 
-    const body: any = {
-      model: this.model,
-      messages,
-      temperature: options?.temperature ?? 0.2,
-      max_tokens: options?.maxTokens ?? 4096,
+    const executeRequest = async (useJsonMode: boolean): Promise<string> => {
+      const body: any = {
+        model: this.model,
+        messages,
+        temperature: options?.temperature ?? 0.2,
+        max_tokens: options?.maxTokens ?? 4096,
+      };
+
+      if (useJsonMode) {
+        body.response_format = { type: "json_object" };
+      }
+
+      return callWithRetry(async () => {
+        const res = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${this.apiKey}`,
+          },
+          body: JSON.stringify(body),
+        });
+
+        if (!res.ok) {
+          const errorText = await res.text();
+          const err: any = new Error(`Groq API error (${res.status}): ${errorText}`);
+          err.status = res.status;
+          throw err;
+        }
+
+        const data = await res.json();
+        const text = data?.choices?.[0]?.message?.content || "";
+        return cleanJsonOutput(text);
+      });
     };
 
     if (options?.responseFormatJson) {
-      body.response_format = { type: "json_object" };
-    }
-
-    return callWithRetry(async () => {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${this.apiKey}`,
-        },
-        body: JSON.stringify(body),
-      });
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        const err: any = new Error(`Groq API error (${res.status}): ${errorText}`);
-        err.status = res.status;
+      try {
+        return await executeRequest(true);
+      } catch (err: any) {
+        // If Groq returns 400 json_validate_failed or empty failed_generation, retry without json_object
+        if (
+          err.status === 400 ||
+          (err.message && (err.message.includes("json_validate_failed") || err.message.includes("failed_generation")))
+        ) {
+          console.warn("[GroqProvider] json_object format failed on provider. Falling back to defensive text extraction...");
+          return await executeRequest(false);
+        }
         throw err;
       }
+    }
 
-      const data = await res.json();
-      const text = data?.choices?.[0]?.message?.content || "";
-      return cleanJsonOutput(text);
-    });
+    return executeRequest(false);
   }
 }
 

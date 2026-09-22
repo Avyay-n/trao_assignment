@@ -13,6 +13,9 @@
     "dev:frontend": "npm run dev --workspace=@prepkit/frontend",
     "build": "npm run build --workspace=@prepkit/core && npm run build --workspace=@prepkit/backend && npm run build --workspace=@prepkit/frontend",
     "build:core": "npm run build --workspace=@prepkit/core",
+    "start": "npm run start --workspace=@prepkit/backend",
+    "start:backend": "npm run start --workspace=@prepkit/backend",
+    "start:frontend": "npm run start --workspace=@prepkit/frontend",
     "test": "npm run test --workspace=@prepkit/core",
     "evaluate": "tsx scripts/evaluate.ts"
   },

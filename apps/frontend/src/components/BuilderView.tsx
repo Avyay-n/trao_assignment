@@ -15,8 +15,11 @@ import {
   ShieldAlert,
   ArrowRightLeft,
   ChevronDown,
+  ChevronUp,
+  Layers,
+  Sparkles,
 } from "lucide-react";
-import { Kit, Question, QuestionCategory } from "@prepkit/core";
+import { Kit, Question, QuestionCategory, Flashcard } from "@prepkit/core";
 import { fetchApi } from "@/lib/api";
 
 interface BuilderViewProps {
@@ -43,6 +46,11 @@ export const BuilderView: React.FC<BuilderViewProps> = ({ kitId, kit, onUpdate }
   const [briefSummary, setBriefSummary] = useState(kit.company_brief.summary);
   const [briefWhatTheyDo, setBriefWhatTheyDo] = useState(kit.company_brief.what_they_do);
 
+  // Flashcards editing
+  const [editingCardId, setEditingCardId] = useState<string | null>(null);
+  const [editFront, setEditFront] = useState("");
+  const [editBack, setEditBack] = useState("");
+
   // Regenerating state indicators
   const [regeneratingCategory, setRegeneratingCategory] = useState<string | null>(null);
   const [regeneratingBrief, setRegeneratingBrief] = useState(false);
@@ -55,6 +63,29 @@ export const BuilderView: React.FC<BuilderViewProps> = ({ kitId, kit, onUpdate }
       }
       return q;
     });
+    const updatedKit = { ...kit, questions: updatedQuestions };
+    onUpdate(updatedKit);
+    saveKitToServer(updatedKit);
+  };
+
+  // Reorder question within category (Section 6)
+  const handleReorderQuestion = (qId: string, direction: "up" | "down") => {
+    const qIndex = kit.questions.findIndex((q) => q.id === qId);
+    if (qIndex === -1) return;
+    const targetQ = kit.questions[qIndex];
+    const catQuestions = kit.questions.filter((q) => q.category === targetQ.category);
+    const catIndex = catQuestions.findIndex((q) => q.id === qId);
+
+    if (direction === "up" && catIndex === 0) return;
+    if (direction === "down" && catIndex === catQuestions.length - 1) return;
+
+    const swapTargetId = direction === "up" ? catQuestions[catIndex - 1].id : catQuestions[catIndex + 1].id;
+    const swapTargetIndex = kit.questions.findIndex((q) => q.id === swapTargetId);
+
+    const updatedQuestions = [...kit.questions];
+    updatedQuestions[qIndex] = kit.questions[swapTargetIndex];
+    updatedQuestions[swapTargetIndex] = targetQ;
+
     const updatedKit = { ...kit, questions: updatedQuestions };
     onUpdate(updatedKit);
     saveKitToServer(updatedKit);
@@ -127,6 +158,48 @@ export const BuilderView: React.FC<BuilderViewProps> = ({ kitId, kit, onUpdate }
     onUpdate(updatedKit);
     saveKitToServer(updatedKit);
     startEditQuestion(newQuestion);
+  };
+
+  // Flashcards handlers (Section 6)
+  const startEditFlashcard = (f: Flashcard) => {
+    setEditingCardId(f.id);
+    setEditFront(f.front);
+    setEditBack(f.back);
+  };
+
+  const handleSaveFlashcardEdit = (fId: string) => {
+    const updatedFlashcards = kit.flashcards.map((f) => {
+      if (f.id === fId) {
+        return { ...f, front: editFront, back: editBack };
+      }
+      return f;
+    });
+    const updatedKit = { ...kit, flashcards: updatedFlashcards };
+    onUpdate(updatedKit);
+    setEditingCardId(null);
+    saveKitToServer(updatedKit);
+  };
+
+  const handleDeleteFlashcard = (fId: string) => {
+    const updatedFlashcards = kit.flashcards.filter((f) => f.id !== fId);
+    const updatedKit = { ...kit, flashcards: updatedFlashcards };
+    onUpdate(updatedKit);
+    saveKitToServer(updatedKit);
+  };
+
+  const handleAddManualFlashcard = () => {
+    const newId = `f_manual_${Date.now().toString(36)}`;
+    const newCard: Flashcard = {
+      id: newId,
+      front: "Key Concept: Describe...",
+      back: "Comprehensive explanation covering principles, implementation, and trade-offs.",
+      requirement_ids: [kit.role.requirements[0]?.id || "r1"],
+    };
+    const updatedFlashcards = [newCard, ...kit.flashcards];
+    const updatedKit = { ...kit, flashcards: updatedFlashcards };
+    onUpdate(updatedKit);
+    saveKitToServer(updatedKit);
+    startEditFlashcard(newCard);
   };
 
   // Regenerate Category (Section 6: Builder requirement)
@@ -510,6 +583,20 @@ export const BuilderView: React.FC<BuilderViewProps> = ({ kitId, kit, onUpdate }
                               {/* Action buttons */}
                               <div className="flex items-center gap-1 flex-shrink-0">
                                 <button
+                                  onClick={() => handleReorderQuestion(q.id, "up")}
+                                  title="Move question up"
+                                  className="p-1.5 text-slate-500 hover:text-indigo-400 hover:bg-slate-800 rounded-lg transition-colors"
+                                >
+                                  <ChevronUp className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleReorderQuestion(q.id, "down")}
+                                  title="Move question down"
+                                  className="p-1.5 text-slate-500 hover:text-indigo-400 hover:bg-slate-800 rounded-lg transition-colors"
+                                >
+                                  <ChevronDown className="w-3.5 h-3.5" />
+                                </button>
+                                <button
                                   onClick={() => handleTogglePin(q.id)}
                                   title={q.isPinned ? "Unpin question" : "Pin question (preserves across category regeneration)"}
                                   className={`p-1.5 rounded-lg transition-colors ${
@@ -568,6 +655,145 @@ export const BuilderView: React.FC<BuilderViewProps> = ({ kitId, kit, onUpdate }
             </div>
           );
         })}
+      </div>
+
+      {/* Flashcards Builder Section (Section 6: Edit, Add, Delete Flashcards) */}
+      <div className="glass-panel rounded-2xl p-6 border border-slate-800 space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-800">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center border border-amber-500/20">
+              <Layers className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-bold text-white tracking-tight">Practice Flashcards</h3>
+                <span className="px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 text-xs font-mono font-medium">
+                  {kit.flashcards.length} cards
+                </span>
+              </div>
+              <p className="text-xs text-slate-400">
+                Edit concept prompts and model answers inline, add cards by hand, or remove obsolete cards.
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={handleAddManualFlashcard}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 transition-all shadow-sm"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Add Flashcard by Hand</span>
+          </button>
+        </div>
+
+        {kit.flashcards.length === 0 ? (
+          <div className="p-8 text-center glass-card rounded-xl text-xs text-slate-500">
+            No flashcards present in this kit. Click above to add one.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {kit.flashcards.map((f) => {
+              const isEditing = editingCardId === f.id;
+
+              return (
+                <div
+                  key={f.id}
+                  className="glass-card rounded-xl p-4 border border-slate-800/80 hover:border-slate-700/80 transition-all space-y-3"
+                >
+                  {isEditing ? (
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                          Front (Concept / Dilemma):
+                        </label>
+                        <textarea
+                          rows={2}
+                          value={editFront}
+                          onChange={(e) => setEditFront(e.target.value)}
+                          className="w-full px-3 py-2 text-xs rounded-lg glass-input text-slate-200"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                          Back (Answer Outline / Explanation):
+                        </label>
+                        <textarea
+                          rows={3}
+                          value={editBack}
+                          onChange={(e) => setEditBack(e.target.value)}
+                          className="w-full px-3 py-2 text-xs rounded-lg glass-input text-slate-200"
+                        />
+                      </div>
+                      <div className="flex justify-end gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setEditingCardId(null)}
+                          className="px-3 py-1 text-xs text-slate-400 hover:text-white"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleSaveFlashcardEdit(f.id)}
+                          className="px-3 py-1 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white"
+                        >
+                          Save Flashcard
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="space-y-1 flex-1">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-amber-400">
+                              {f.id}
+                            </span>
+                            {f.requirement_ids?.map((rId) => (
+                              <span
+                                key={rId}
+                                className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-950/40 text-indigo-300 border border-indigo-800/40"
+                              >
+                                {rId}
+                              </span>
+                            ))}
+                          </div>
+                          <h6 className="text-xs font-semibold text-white leading-snug pt-1">
+                            {f.front}
+                          </h6>
+                        </div>
+
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <button
+                            onClick={() => startEditFlashcard(f)}
+                            title="Edit flashcard"
+                            className="p-1.5 text-slate-500 hover:text-slate-300 rounded-lg transition-colors"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteFlashcard(f.id)}
+                            title="Delete flashcard"
+                            className="p-1.5 text-slate-500 hover:text-rose-400 rounded-lg transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="mt-2.5 p-2.5 rounded-lg bg-slate-950/40 border border-slate-800/50 text-[11px] text-slate-300 leading-relaxed">
+                        <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block mb-0.5">
+                          Answer Outline:
+                        </span>
+                        {f.back}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

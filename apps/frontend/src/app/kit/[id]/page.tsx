@@ -25,7 +25,7 @@ import { PracticeView } from "@/components/PracticeView";
 import { MockInterviewView } from "@/components/MockInterviewView";
 import { ExportView } from "@/components/ExportView";
 import { NewKitModal } from "@/components/NewKitModal";
-import { User, fetchApi, getStoredToken, clearStoredToken } from "@/lib/api";
+import { User, fetchApi, getStoredToken, clearStoredToken, API_BASE } from "@/lib/api";
 
 type TabType = "builder" | "schedule" | "practice" | "mock" | "export";
 
@@ -68,7 +68,7 @@ export default function KitDetailPage() {
   };
 
   const subscribeToProgress = () => {
-    const eventSource = new EventSource(`http://localhost:4000/api/kits/${kitId}/stream`);
+    const eventSource = new EventSource(`${API_BASE}/kits/${kitId}/stream`);
 
     eventSource.onmessage = async (event) => {
       try {
