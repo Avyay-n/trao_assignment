@@ -40,7 +40,7 @@ export function buildSchedule(
   // System-design & Technical prioritized over company-fit early on
   const scoredQuestions = questions.map((q) => {
     let score = 0;
-    const hasMust = q.requirement_ids.some((id) => reqPriorityMap.get(id) === "must");
+    const hasMust = q.requirement_ids.some((id: string) => reqPriorityMap.get(id) === "must");
     if (hasMust) score += 1000;
 
     score += (q.difficulty || 2) * 100;

@@ -9,12 +9,14 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@prepkit/core": "*",
     "clsx": "^2.1.1",
     "lucide-react": "^0.475.0",
     "next": "14.2.24",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "tailwind-merge": "^3.0.1"
+    "tailwind-merge": "^3.0.1",
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "@types/node": "^22.13.9",

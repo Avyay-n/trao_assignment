@@ -121,14 +121,14 @@ export function sanitizeKitForAppendixA(kit: Kit): Kit {
       title: kit.role.title,
       seniority: kit.role.seniority,
       responsibilities: kit.role.responsibilities,
-      requirements: kit.role.requirements.map(r => ({
+      requirements: kit.role.requirements.map((r: any) => ({
         id: r.id,
         text: r.text,
         kind: r.kind,
         priority: r.priority,
       })),
     },
-    questions: kit.questions.map(q => ({
+    questions: kit.questions.map((q: any) => ({
       id: q.id,
       requirement_ids: q.requirement_ids,
       category: q.category,
@@ -136,7 +136,7 @@ export function sanitizeKitForAppendixA(kit: Kit): Kit {
       answer_outline: q.answer_outline,
       difficulty: q.difficulty,
     })),
-    flashcards: kit.flashcards.map(f => ({
+    flashcards: kit.flashcards.map((f: any) => ({
       id: f.id,
       front: f.front,
       back: f.back,
@@ -144,7 +144,7 @@ export function sanitizeKitForAppendixA(kit: Kit): Kit {
     })),
     schedule: {
       days_available: kit.schedule.days_available,
-      days: kit.schedule.days.map(d => ({
+      days: kit.schedule.days.map((d: any) => ({
         day: d.day,
         focus: d.focus,
         question_ids: d.question_ids,

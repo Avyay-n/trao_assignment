@@ -1,4 +1,4 @@
-import process from "node:process";
+declare const process: any;
 import * as cheerio from "cheerio";
 import { RobotsParser } from "./robots.js";
 

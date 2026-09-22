@@ -1,4 +1,4 @@
-import process from "node:process";
+declare const process: any;
 import { LLMClientOptions, LLMMessage, LLMProvider, cleanJsonOutput } from "./client.js";
 export type { LLMProvider, LLMClientOptions, LLMMessage };
 

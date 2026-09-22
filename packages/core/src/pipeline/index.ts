@@ -108,7 +108,7 @@ Return strictly valid JSON with this shape:
   });
 
   // Ensure requirements always have IDs and valid priority/kind
-  const validatedRequirements: Requirement[] = (parsedRole.requirements || []).map((r, i) => ({
+  const validatedRequirements: Requirement[] = (parsedRole.requirements || []).map((r: any, i: number) => ({
     id: r.id || `r${i + 1}`,
     text: r.text || "Demonstrated professional experience in relevant domain",
     kind: (["technical", "behavioural", "domain"].includes(r.kind) ? r.kind : "technical") as any,
