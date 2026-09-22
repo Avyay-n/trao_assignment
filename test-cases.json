@@ -1,0 +1,14 @@
+[
+  {
+    "id": "case-01",
+    "jd": "Senior Full-Stack Engineer\n\nWe are looking for an experienced engineer to lead our distributed platform. Requirements:\n- 5+ years building distributed web applications with TypeScript, Node.js, and React\n- Proven experience designing scalable database schemas and high-throughput REST/GraphQL APIs\n- Strong background in containerization (Docker, Kubernetes)\n- Nice to have: Familiarity with Kafka or RabbitMQ event streaming\n- Track record of mentoring junior engineers and conducting code reviews",
+    "company_url": "https://example.com",
+    "days": 5
+  },
+  {
+    "id": "case-02",
+    "jd": "Backend Developer\nBuild backend services in Go or Node.js. 2+ years experience required.",
+    "company_url": "https://example.com/team",
+    "days": 1
+  }
+]
